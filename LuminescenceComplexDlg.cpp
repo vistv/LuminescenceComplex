@@ -1270,7 +1270,7 @@ void CLuminescenceComplexDlg::MeasureKineticHard(bool isForCombo)
 		if (pPage2->isMaxTime)
 		{
 			stopTime = CTime::GetCurrentTime();
-			time_t spTm = stopTime.GetTime(); 
+			time_t spTm = stopTime.GetTime();
 			timeOfMeas = long(spTm - stTm);
 			zalyshTime = pPage2->maxTime - timeOfMeas;
 			if (!isForCombo) statusString2.Format("Kinetic will be measured during next %d sec", zalyshTime);
