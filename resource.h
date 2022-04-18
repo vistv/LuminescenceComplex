@@ -28,6 +28,7 @@
 #define IDC_EDIT_stopat                 1017
 #define IDC_EDIT_step                   1018
 #define IDC_EDIT_stopat2                1019
+#define IDC_EDIT_Wavelength3            1019
 #define IDC_BUTTON_ApplyLumSettings     1020
 #define IDC_RADIO_hardHist              1021
 #define IDC_EDIT_nmPerStep1             1021
@@ -57,6 +58,7 @@
 #define IDC_RADIO1                      1042
 #define IDC_RADIO2                      1043
 #define IDC_BUTTON_setMaxTime           1044
+#define IDC_RADIO_Monochr3              1044
 #define IDC_RADIO_ShowDec               1046
 #define IDC_RADIO_ShowLum               1047
 #define IDC_EDIT_FWstart                1048
@@ -67,6 +69,9 @@
 #define IDC_AnDigSt                     1052
 #define IDC_AnDigSt2                    1053
 #define IDC_DigSt2                      1053
+#define IDC_RADIO_GR500                 1054
+#define IDC_ARC_SETUP                   1055
+#define IDC_RADIO_GR300                 1056
 
 // Next default values for new objects
 // 
@@ -74,7 +79,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        140
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1053
+#define _APS_NEXT_CONTROL_VALUE         1057
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

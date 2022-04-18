@@ -25,7 +25,7 @@ CLuminescenceComplexDlg::CLuminescenceComplexDlg(CWnd* pParent /*=nullptr*/)
 	, StartsCorInt(0)
 	, StopsCorInt(0)
 	, statusString(_T(""))
-	, isMono2Enabled(FALSE)
+	, whichMonoEnabled(0)
 	, editBoxSetWave(_T(""))
 	, editBoxGoWave(_T(""))
 	, statusString2(_T(""))
@@ -40,6 +40,7 @@ CLuminescenceComplexDlg::CLuminescenceComplexDlg(CWnd* pParent /*=nullptr*/)
 	, old_lamb2(0)
 	, isPlotLuminForCombo(FALSE)
 	, isStopIdle(FALSE)
+	, m_isARCgr500(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -57,9 +58,11 @@ void CLuminescenceComplexDlg::DoDataExchange(CDataExchange* pDX)
 	//	DDX_Text(pDX, IDC_EDIT_Wavelength2, lamb2);
 	DDX_Control(pDX, IDC_EDIT_Wavelength1, lambda1ctrl);
 	DDX_Control(pDX, IDC_EDIT_Wavelength2, lambda2ctrl);
+	DDX_Control(pDX, IDC_EDIT_Wavelength3, lambda3ctrl);
 	DDX_Text(pDX, IDC_EDIT2, statusString);
 	DDX_Control(pDX, IDC_COMBO_timeWindows, timeWindCombo);
-	DDX_Radio(pDX, IDC_RADIO_Monochr1, isMono2Enabled);
+	DDX_Radio(pDX, IDC_RADIO_Monochr1, whichMonoEnabled);
+	//	DDX_Radio(pDX, IDC_RADIO_Monochr3, isMono3Enabled);
 	DDX_Text(pDX, IDC_EDIT_SetWavelength, editBoxSetWave);
 	DDX_Text(pDX, IDC_EDIT_GoWavelength, editBoxGoWave);
 	DDX_Text(pDX, IDC_EDITstatus2, statusString2);
@@ -74,6 +77,7 @@ void CLuminescenceComplexDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BUTTON_Set, m_SetButt);
 	DDX_Control(pDX, IDC_RADIO_Monochr1, m_Mono1Butt);
 	DDX_Control(pDX, IDC_RADIO_Monochr2, m_Mono2Butt);
+	DDX_Control(pDX, IDC_RADIO_Monochr3, m_Mono3Butt);
 	DDX_Control(pDX, IDC_EDITstatus2, m_statusString2);
 	DDX_Control(pDX, IDSave, m_saveButt);
 	DDX_Control(pDX, IDC_EDIT_SetWavelength, m_setEditCtrl);
@@ -81,6 +85,7 @@ void CLuminescenceComplexDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_RADIO_ShowDec, isPlotLuminForCombo);
 	DDX_Control(pDX, IDC_RADIO_ShowDec, c_ComboDec);
 	DDX_Control(pDX, IDC_RADIO_ShowLum, c_ComboLum);
+	DDX_Radio(pDX, IDC_RADIO_GR300, m_isARCgr500);
 }
 
 BEGIN_MESSAGE_MAP(CLuminescenceComplexDlg, CDialogEx)
@@ -112,6 +117,8 @@ BEGIN_MESSAGE_MAP(CLuminescenceComplexDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON1, &CLuminescenceComplexDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_AnDigSt, &CLuminescenceComplexDlg::OnBnClickedAndigst)
 	ON_BN_CLICKED(IDC_DigSt2, &CLuminescenceComplexDlg::OnBnClickedDigst2)
+	ON_BN_CLICKED(IDC_RADIO_Monochr3, &CLuminescenceComplexDlg::OnBnClickedRadioMonochr3)
+	ON_BN_CLICKED(IDC_ARC_SETUP, &CLuminescenceComplexDlg::OnBnClickedArcSetup)
 END_MESSAGE_MAP()
 
 BOOL CLuminescenceComplexDlg::OnInitDialog()
@@ -133,7 +140,7 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	m_Image.init("ic.bmp");
 	if (m_Image.error())
 	{
-		// Что-то пошло не так...
+		// Щось пішло не так...
 	}
 
 	SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -219,10 +226,12 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	
 	GetPrivateProfileStringA("lambdas", "Lambda1", "300.0", temp, 32, cfg_IniName); lamb1 = atof(temp);
 	GetPrivateProfileStringA("lambdas", "Lambda2", "300.0", temp, 32, cfg_IniName); lamb2 = atof(temp);
+	GetPrivateProfileStringA("lambdas", "Lambda3", "300.0", temp, 32, cfg_IniName); lamb3 = atof(temp);
 	CFont f;
 	f.CreatePointFont(-120/*tenths of a point*/, "Arial");
 	GetDlgItem(IDC_EDIT_Wavelength1)->SetFont(&f);
 	GetDlgItem(IDC_EDIT_Wavelength2)->SetFont(&f);
+	GetDlgItem(IDC_EDIT_Wavelength3)->SetFont(&f);
 	GetDlgItem(IDC_EDIT_StartInt)->SetFont(&f);
 	GetDlgItem(IDC_EDIT_StopInt)->SetFont(&f);
 	GetDlgItem(IDC_EDIT_CorrStartsInt)->SetFont(&f);
@@ -260,7 +269,7 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	{
 		HRESULT hr = devPic.OpenDevice();
 		if (hr == S_OK) isPicConnected = true; else isPicConnected = false;
-		//isPicConnected = true;
+		isPicConnected = true; // pic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 		hr = devNanoFluor.OpenDevice();
 		if (hr == S_OK) isNFConnected = true; else isNFConnected = false;
@@ -332,6 +341,11 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 		DeactivateControls();
 	}
 
+	// Init ARC
+	
+
+
+
 //	int test = timeWindCombo.GetCount();
 	GetPrivateProfileString("initial", "FileName", "01_Sample_Exc=400nm_Em=450nm_T=300K_I=10mkA_Fon=200", temp, 128, cfg_IniName);
 	FileName = temp;
@@ -344,6 +358,7 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	whatWeMeasure = 1;
 
 	lambda2ctrl.EnableWindow(false);
+	lambda3ctrl.EnableWindow(false);
 
 	c_ComboDec.EnableWindow(false);
 	c_ComboLum.EnableWindow(false);
@@ -525,7 +540,14 @@ void CLuminescenceComplexDlg::OnTimer(UINT_PTR nIDEvent)
 			tempString.Format("%.1f", lamb1 *0.547+197.45);
 			pWnd->SetWindowText(tempString);
 		}
-		
+		if (old_lamb3 != lamb3)
+		{
+			pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
+			tempString.Format("%.2f", lamb3);
+			pWnd->SetWindowText(tempString);
+			old_lamb3 = lamb3;
+
+		}
 
 		//if (pPage2->isYScaleLog) Scope.YAxis.ScaleMode = smLogDecascale; // smLogarithmic;
 		//else Scope.YAxis.ScaleMode = smLinear; // smLogarithmic;
@@ -601,23 +623,38 @@ void CLuminescenceComplexDlg::OnCbnSelchangeCombotimewindows()
 }
 void CLuminescenceComplexDlg::OnBnClickedRadioMonochr1()
 {
-	isMono2Enabled = false;
+ 	whichMonoEnabled = 0;
+	lambda3ctrl.EnableWindow(false);
 	lambda2ctrl.EnableWindow(false);
 	lambda1ctrl.EnableWindow(true);
 
 	pWnd = GetDlgItem(IDC_mdr2);
 	tempString.Format("%.1f", lamb1 *0.547+197.45);
 	pWnd->SetWindowText(tempString);
+	m_SetButt.SetWindowTextA("Set");
 }
 void CLuminescenceComplexDlg::OnBnClickedRadioMonochr2()
 {
-	isMono2Enabled = true;
+ 	whichMonoEnabled = 1;
 	lambda2ctrl.EnableWindow(true);
 	lambda1ctrl.EnableWindow(false);
+	lambda3ctrl.EnableWindow(false);
 
 	pWnd = GetDlgItem(IDC_mdr2);
 	tempString.Format("%.1f", lamb2 *0.547+197.45);
 	pWnd->SetWindowText(tempString);
+	m_SetButt.SetWindowTextA("Set");
+}
+
+
+
+void CLuminescenceComplexDlg::OnBnClickedRadioMonochr3()
+{
+ 	whichMonoEnabled = 2;
+	lambda2ctrl.EnableWindow(false);
+	lambda1ctrl.EnableWindow(false);
+	lambda3ctrl.EnableWindow(true);
+	m_SetButt.SetWindowTextA("Initialize");
 }
 
 void CLuminescenceComplexDlg::OnBnClickedButtonSet()
@@ -626,7 +663,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonSet()
 	double tf = atof(editBoxSetWave);
 
 	float lowLim, upLim;
-	if (!isMono2Enabled) { lowLim = pPage4->t_LLIM1; upLim = pPage4->t_ULIM1; }
+	if (whichMonoEnabled == 0) { lowLim = pPage4->t_LLIM1; upLim = pPage4->t_ULIM1; }
 	else { lowLim = pPage4->t_LLIM2; upLim = pPage4->t_ULIM2; }
 	
 	
@@ -637,7 +674,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonSet()
 		tempString.Format("%.1f", tf *0.547+197.45);
 		pWnd->SetWindowText(tempString);
 
-		if (!isMono2Enabled)
+		if (whichMonoEnabled == 0)
 		{
 			lamb1 = tf;
 			pWnd = GetDlgItem(IDC_EDIT_Wavelength1);
@@ -661,7 +698,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonStepup()
 
 	double nmPerStep;
 
-	if (!isMono2Enabled) 	nmPerStep = pPage4->stepMotnmPerStep1;	
+	if (whichMonoEnabled == 0) 	nmPerStep = pPage4->stepMotnmPerStep1;
 	else 	 	nmPerStep = pPage4->stepMotnmPerStep2; 			
 		
 	int dirStep;
@@ -670,7 +707,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonStepup()
 
 	if (nmPerStep < 0.001) return;
 
-	if (!isMono2Enabled) devPic.MotorGo(WORD(0.02 / nmPerStep), 1, dirStep);
+	if (whichMonoEnabled == 0) devPic.MotorGo(WORD(0.02 / nmPerStep), 1, dirStep);
 	else devPic.MotorGo(WORD(0.02 / nmPerStep), 2, dirStep);
 
 }
@@ -678,7 +715,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonStepdown()
 {
 	double nmPerStep;
 
-	if (!isMono2Enabled) 	nmPerStep = pPage4->stepMotnmPerStep1;
+	if (whichMonoEnabled == 0) 	nmPerStep = pPage4->stepMotnmPerStep1;
 	else 	 	nmPerStep = pPage4->stepMotnmPerStep2;
 	
 	int dirStep;
@@ -687,7 +724,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonStepdown()
 
 	if (nmPerStep < 0.001) return;
 
-	if (!isMono2Enabled) devPic.MotorGo(WORD(0.02 / nmPerStep), 1, -1 * dirStep);
+	if (whichMonoEnabled == 0) devPic.MotorGo(WORD(0.02 / nmPerStep), 1, -1 * dirStep);
 	else devPic.MotorGo(WORD(0.02 / nmPerStep), 2, -1 * dirStep);
 
 
@@ -746,7 +783,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonGo()
 	else return;
 	
 	float lowLim, upLim;
-	if (!isMono2Enabled) { lowLim = pPage4->t_LLIM1; upLim = pPage4->t_ULIM1; }
+	if (whichMonoEnabled == 0) { lowLim = pPage4->t_LLIM1; upLim = pPage4->t_ULIM1; }
 	else { lowLim = pPage4->t_LLIM2; upLim = pPage4->t_ULIM2; }
 
 	float tf =(float) atof(editBoxGoWave);
@@ -787,7 +824,7 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 	clock_t time1 = 0; 
 
 	endPosition = (float)atof(pThis->editBoxGoWave);
-	if (!pThis->isMono2Enabled)
+	if (pThis->whichMonoEnabled == 0)
 	{
 		nmPerStep = pThis->pPage4->stepMotnmPerStep1;
 		lowLim = pThis->pPage4->t_LLIM1;
@@ -1453,7 +1490,7 @@ void CLuminescenceComplexDlg::MeasureLuminescence(void)
 	byte motNum;
 	
 	
-	if (!isMono2Enabled)
+	if (whichMonoEnabled == 0)
 	{
 		lambda = &lamb1;
 		lowLim = pPage4->t_LLIM1;
@@ -1689,7 +1726,7 @@ void CLuminescenceComplexDlg::MeasureCombo(void)
 	byte motNum;
 
 
-	if (!isMono2Enabled)
+	if (whichMonoEnabled == 0)
 	{
 		lambda = &lamb1;
 		lowLim = pPage4->t_LLIM1;
@@ -2164,4 +2201,13 @@ void CLuminescenceComplexDlg::OnBnClickedAndigst()
 void CLuminescenceComplexDlg::OnBnClickedDigst2()
 {
 	devNanoFluor.SetSecondInputState(1);
+}
+
+
+
+
+
+void CLuminescenceComplexDlg::OnBnClickedArcSetup()
+{
+	// TODO: Add your control notification handler code here
 }

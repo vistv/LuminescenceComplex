@@ -63,11 +63,14 @@ public:
 	
 	CEdit  lambda1ctrl;
 	CEdit  lambda2ctrl;
+	CEdit  lambda3ctrl;
 	
 	double lamb1;
 	double lamb2;
+	double lamb3;
 	double old_lamb1;
 	double old_lamb2;
+	double old_lamb3;
 	CPage1* pPage1;
 	CPage2* pPage2;
 	CPage3* pPage3;
@@ -83,7 +86,8 @@ public:
 	CComboBox timeWindCombo;
 	byte currentRange;
 	afx_msg void OnCbnSelchangeCombotimewindows();
-	BOOL isMono2Enabled;
+	int whichMonoEnabled;
+	
 	afx_msg void OnBnClickedRadioMonochr1();
 	afx_msg void OnBnClickedRadioMonochr2();
 	afx_msg void OnBnClickedButtonSet();
@@ -162,6 +166,7 @@ public:
 	CButton m_SetButt;
 	CButton m_Mono1Butt;
 	CButton m_Mono2Butt;
+	CButton m_Mono3Butt;
 	CEdit m_statusString2;
 
 	CDataExchange* pDXcopy;
@@ -186,4 +191,7 @@ public:
 	bool isStopIdle;
 	afx_msg void OnBnClickedAndigst();
 	afx_msg void OnBnClickedDigst2();
+	afx_msg void OnBnClickedRadioMonochr3();
+	int m_isARCgr500;
+	afx_msg void OnBnClickedArcSetup();
 };
