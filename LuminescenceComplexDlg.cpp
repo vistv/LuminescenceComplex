@@ -38,6 +38,7 @@ CLuminescenceComplexDlg::CLuminescenceComplexDlg(CWnd* pParent /*=nullptr*/)
 	, isIdleMeasuring(false)
 	, old_lamb1(0)
 	, old_lamb2(0)
+	, old_lamb3(0)
 	, isPlotLuminForCombo(FALSE)
 	, isStopIdle(FALSE)
 	, m_isARCgr500(0)
@@ -55,15 +56,15 @@ void CLuminescenceComplexDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_StopInt, StopsInt);
 	DDX_Text(pDX, IDC_EDIT_CorrStartsInt, StartsCorInt);
 	DDX_Text(pDX, IDC_EDIT_CorrStopsInt, StopsCorInt);
-	//	DDX_Text(pDX, IDC_EDIT_Wavelength1, lamb1);
-	//	DDX_Text(pDX, IDC_EDIT_Wavelength2, lamb2);
+
 	DDX_Control(pDX, IDC_EDIT_Wavelength1, lambda1ctrl);
 	DDX_Control(pDX, IDC_EDIT_Wavelength2, lambda2ctrl);
 	DDX_Control(pDX, IDC_EDIT_Wavelength3, lambda3ctrl);
 	DDX_Text(pDX, IDC_EDIT2, statusString);
 	DDX_Control(pDX, IDC_COMBO_timeWindows, timeWindCombo);
-	DDX_Radio(pDX, IDC_RADIO_Monochr1, whichMonoEnabled);
-	//	DDX_Radio(pDX, IDC_RADIO_Monochr3, isMono3Enabled);
+	//DDX_Radio(pDX, IDC_RADIO_Monochr1, whichMonoEnabled);
+	//DDX_Radio(pDX, IDC_RADIO_Monochr3, isMono3Enabled);
+
 	DDX_Text(pDX, IDC_EDIT_SetWavelength, editBoxSetWave);
 	DDX_Text(pDX, IDC_EDIT_GoWavelength, editBoxGoWave);
 	DDX_Text(pDX, IDC_EDITstatus2, statusString2);
@@ -412,6 +413,7 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	tempString.Format("%.1f", lamb1 *0.547+197.45);
 	pWnd->SetWindowText(tempString);
 
+	m_Mono1Butt.SetCheck(1);
 	UpdateData(false);
 	return TRUE;  
 }
@@ -813,8 +815,9 @@ void CLuminescenceComplexDlg::OnBnClickedButtonGo()
 {
 	if (isMotorMoving)
 	{
-		m_Mono1Butt.EnableWindow(true);
-		m_Mono2Butt.EnableWindow(true);
+		if (isPicConnected) m_Mono1Butt.EnableWindow(true);
+		if (isPicConnected) m_Mono2Butt.EnableWindow(true);
+		if (isARCConnected) m_Mono3Butt.EnableWindow(true);
 		m_buttonStart.EnableWindow(true);
 	//	m_StopButt.EnableWindow(true);
 		m_ContButt.EnableWindow(true);
@@ -953,6 +956,7 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 	ULONG Steps0 = Steps;
 	WORD step01nm = WORD(0.1 / nmPerStep);
 	if (step01nm < 1) step01nm = 1;
+	if (pThis->whichMonoEnabled == 2) step01nm = Steps;
 
 	while (Steps > 0)
 	{
@@ -1002,8 +1006,9 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 	
 	pThis->isMotorMoving = false;
 	pThis->m_GoButt.SetWindowTextA("Go");
-	pThis->m_Mono1Butt.EnableWindow(true);
-	pThis->m_Mono2Butt.EnableWindow(true);
+	if (pThis ->isPicConnected) pThis->m_Mono1Butt.EnableWindow(true);
+	if (pThis->isPicConnected) pThis->m_Mono2Butt.EnableWindow(true);
+	if (pThis->isARCConnected) pThis->m_Mono3Butt.EnableWindow(true);
 	pThis->m_buttonStart.EnableWindow(true);
 	pThis->m_StopButt.EnableWindow(true);
 	pThis->m_ContButt.EnableWindow(true);
@@ -2362,6 +2367,7 @@ void CLuminescenceComplexDlg::OnBnClickedRadioGr300()
 void CLuminescenceComplexDlg::InitARC()
 {
 	pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
-	if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0");
+	if (devARC.InitializeARC(isARCGr300)) 	{ pWnd->SetWindowText("200.0"); lamb3 = 200.0; } 
+	//if (true) { pWnd->SetWindowText("200.0"); lamb3 = 200.0; }
 	else pWnd->SetWindowText("Error");
 }
