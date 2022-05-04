@@ -4,13 +4,23 @@
 class CARCControl
 {
 public:
+	
 	CARCControl();
 
-	CString comport = "COM3";
+	CString comport;
 	Serial* SP;
 
-	bool InitializeARC();
+	void SetComportAndConnect(CString Comport);
+	bool InitializeARC(bool isGr300);
 	bool GotoStep(long stepnum);
+	bool IsConnected();
+	bool MotorGo(WORD numberOfSteps, short Direction = -1);
+
+
+	double b1;
+	double b2;
+	long a1;
+	long a2;
 };
 
 //if (!(SP->IsConnected()))

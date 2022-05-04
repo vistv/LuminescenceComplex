@@ -9,6 +9,7 @@
 #include "CPage2.h"
 #include "CPage3.h"
 #include "CPage4.h"
+#include "CARCControl.h"
 
 
 #define cm_measKinHard 2
@@ -40,7 +41,7 @@ public:
 protected:
 	image m_Image;
 	HICON m_hIcon;
-
+	CString ARCcomport;
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
@@ -71,6 +72,15 @@ public:
 	double old_lamb1;
 	double old_lamb2;
 	double old_lamb3;
+
+
+	double arc_nmperstep1;
+	double arc_nmperstep2;
+	long arc_a1;
+	long arc_a2;
+	bool isARCGr300;
+
+
 	CPage1* pPage1;
 	CPage2* pPage2;
 	CPage3* pPage3;
@@ -78,7 +88,9 @@ public:
 	afx_msg void OnClose();
 	CWinUsbPic devPic;
 	CWinUsbNanoFluor devNanoFluor;
+	CARCControl devARC;
 	bool isPicConnected;
+	bool isARCConnected;
 	CString statusString;
 	bool isNFConnected;
 	UINT_PTR timerForVisualisation;
@@ -167,6 +179,10 @@ public:
 	CButton m_Mono1Butt;
 	CButton m_Mono2Butt;
 	CButton m_Mono3Butt;
+
+
+	CButton m_Gr300Butt;
+	CButton m_Gr500Butt;
 	CEdit m_statusString2;
 
 	CDataExchange* pDXcopy;
@@ -194,4 +210,6 @@ public:
 	afx_msg void OnBnClickedRadioMonochr3();
 	int m_isARCgr500;
 	afx_msg void OnBnClickedArcSetup();
+	afx_msg void OnBnClickedRadioGr500();
+	afx_msg void OnBnClickedRadioGr300();
 };

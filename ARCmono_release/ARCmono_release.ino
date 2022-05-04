@@ -4,20 +4,21 @@ const int motor_indicator = 5;
 const int dirPin = 2;
 const int stepPin = 3;
 
-long int n1 = 0; // current quantity of steps
-long int n2 = 0; // previous quantity of steps
+long int current_step_num = 0; // current quantity of steps
+long int needed_step_num = 0;
 
 int sped = 30;
 byte dr = 0;
 
-int steps = 0;
-int magic_init = 5555;
+long int steps = 0;
+
 
 
 byte ind_1_state = 0;
 byte ind_1_prestate = 0;
 byte ind_2_state = 0;
 byte ind_2_prestate = 0;
+char command;
 
 void setup()
 {
@@ -28,40 +29,71 @@ void setup()
   pinMode(motor_indicator, INPUT);
   digitalWrite(dirPin, LOW);
   digitalWrite(led, LOW);
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
+
 void loop()
 {
-  steps = Serial.parseInt();
-  if (steps == magic_init) {goto_zero(); steps = 0; n1 = 0; n2 = 0;}
-  
-  if (steps < 0) dr = 1; 
-  if (steps > 0) dr = 0; 
+  if (Serial.available())
+  {
+    if (!isalpha(Serial.peek())) Serial.flush(); // отримано невідому команду - очистка порту
 
+    command = Serial.read();
+
+    if (command == 'i') // наказ ініціалізуватись
+    {
+      goto_zero();
+      steps = 0;
+      current_step_num = 0;
+      Serial.print('i');
+    }
+    else if (command == 'd') //поїхати на якусь кількість кроків в якийсь бік
+    {
+
+      steps = Serial.parseInt();
+      motor_run_nsteps();
+      Serial.println(current_step_num);
+
+    }
+    else if (command == 'a') //перевірка чи підключений
+    {
+
+      Serial.print('a');
+
+    }
+    else if (command == 'g') //поїхати конкретно на крок номер...
+    {
+      needed_step_num = Serial.parseInt();
+      steps = needed_step_num - current_step_num;
+      motor_run_nsteps();
+      Serial.println(current_step_num);
+    }
+  }
+}
+
+
+inline void motor_run_nsteps()
+{
+  digitalWrite(led, HIGH);
+  if (steps < 0) dr = 1; else dr = 0;
   digitalWrite(dirPin, dr);
   steps = abs(steps);
-
-
-
   while (steps)
   {
     makeStep();
     steps--;
-    if (!dr) n1++; else n1--;
+    if (!dr) current_step_num++; else current_step_num--;
+    if (current_step_num > 576000) current_step_num -= 576000;
+    if (current_step_num < 0) current_step_num += 576000;
   }
-
-  if (n1 != n2)
-  {
-    Serial.println(n1);
-    n2 = n1;
-  }
-
-
+  digitalWrite(led, LOW);
 }
+
+
 
 void goto_zero()
 {
-
+  digitalWrite(led, HIGH);
   digitalWrite(dirPin, 0);
 
   // Move motor to end of grating indicator
@@ -112,6 +144,7 @@ void goto_zero()
   }
 
   sped /= 10; // return high speed
+  digitalWrite(led, LOW);
 }
 
 inline void makeStep()

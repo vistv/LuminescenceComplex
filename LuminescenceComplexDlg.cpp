@@ -41,6 +41,7 @@ CLuminescenceComplexDlg::CLuminescenceComplexDlg(CWnd* pParent /*=nullptr*/)
 	, isPlotLuminForCombo(FALSE)
 	, isStopIdle(FALSE)
 	, m_isARCgr500(0)
+	, isARCGr300(true)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -78,6 +79,8 @@ void CLuminescenceComplexDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_RADIO_Monochr1, m_Mono1Butt);
 	DDX_Control(pDX, IDC_RADIO_Monochr2, m_Mono2Butt);
 	DDX_Control(pDX, IDC_RADIO_Monochr3, m_Mono3Butt);
+	DDX_Control(pDX, IDC_RADIO_GR300, m_Gr300Butt);
+	DDX_Control(pDX, IDC_RADIO_GR500, m_Gr500Butt);
 	DDX_Control(pDX, IDC_EDITstatus2, m_statusString2);
 	DDX_Control(pDX, IDSave, m_saveButt);
 	DDX_Control(pDX, IDC_EDIT_SetWavelength, m_setEditCtrl);
@@ -86,6 +89,7 @@ void CLuminescenceComplexDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_RADIO_ShowDec, c_ComboDec);
 	DDX_Control(pDX, IDC_RADIO_ShowLum, c_ComboLum);
 	DDX_Radio(pDX, IDC_RADIO_GR300, m_isARCgr500);
+
 }
 
 BEGIN_MESSAGE_MAP(CLuminescenceComplexDlg, CDialogEx)
@@ -119,6 +123,8 @@ BEGIN_MESSAGE_MAP(CLuminescenceComplexDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_DigSt2, &CLuminescenceComplexDlg::OnBnClickedDigst2)
 	ON_BN_CLICKED(IDC_RADIO_Monochr3, &CLuminescenceComplexDlg::OnBnClickedRadioMonochr3)
 	ON_BN_CLICKED(IDC_ARC_SETUP, &CLuminescenceComplexDlg::OnBnClickedArcSetup)
+	ON_BN_CLICKED(IDC_RADIO_GR500, &CLuminescenceComplexDlg::OnBnClickedRadioGr500)
+	ON_BN_CLICKED(IDC_RADIO_GR300, &CLuminescenceComplexDlg::OnBnClickedRadioGr300)
 END_MESSAGE_MAP()
 
 BOOL CLuminescenceComplexDlg::OnInitDialog()
@@ -220,10 +226,12 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 
 	timerForVisualisation = SetTimer(IDT_timerForVisualisation, 500, NULL);
 
+	
+
 	CHAR temp[128] = "";
 	//Init Lambdas
 	{
-	
+	GetPrivateProfileStringA("ARC", "ComportNo", "COM3", temp, 32, cfg_IniName); ARCcomport = CString(temp);
 	GetPrivateProfileStringA("lambdas", "Lambda1", "300.0", temp, 32, cfg_IniName); lamb1 = atof(temp);
 	GetPrivateProfileStringA("lambdas", "Lambda2", "300.0", temp, 32, cfg_IniName); lamb2 = atof(temp);
 	GetPrivateProfileStringA("lambdas", "Lambda3", "300.0", temp, 32, cfg_IniName); lamb3 = atof(temp);
@@ -248,6 +256,18 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	pPage4->stepMotnmPerStep1 = atof(temp);
 	GetPrivateProfileStringA("lambdas", "nmPerStep2", "0.002884895", temp, 32, cfg_IniName);
 	pPage4->stepMotnmPerStep2 = atof(temp);
+	// ARC
+	GetPrivateProfileStringA("lambdas", "ARCnmPerStep1", "0.031386430", temp, 32, cfg_IniName);
+	arc_nmperstep1 = atof(temp);
+	GetPrivateProfileStringA("lambdas", "ARCnmPerStep2", "0.031572700", temp, 32, cfg_IniName);
+	arc_nmperstep2 = atof(temp);
+	GetPrivateProfileStringA("lambdas", "ARC_a1", "-7320", temp, 32, cfg_IniName);
+	arc_a1 = long(atof(temp));
+	GetPrivateProfileStringA("lambdas", "ARC_a2", "280880", temp, 32, cfg_IniName);
+	arc_a2 = long(atof(temp));
+
+
+
 
 	GetPrivateProfileStringA("lambdas", "LowerLimit1", "200", temp, 32, cfg_IniName);
 	pPage4->t_LLIM1 = atof(temp);
@@ -269,14 +289,21 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	{
 		HRESULT hr = devPic.OpenDevice();
 		if (hr == S_OK) isPicConnected = true; else isPicConnected = false;
-		isPicConnected = true; // pic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 		hr = devNanoFluor.OpenDevice();
 		if (hr == S_OK) isNFConnected = true; else isNFConnected = false;
 
-		if (isPicConnected && isNFConnected) statusString = "All devices are connected";
-		if (isPicConnected && !isNFConnected) statusString = "Only Pic device is connected";
-		if (!isPicConnected && isNFConnected) statusString = "Only NanoFluor device is connected";
+		devARC.SetComportAndConnect(ARCcomport);
+		isARCConnected = devARC.IsConnected();
+
+		CString whatsConnected = "Nothing connected";
+		if (isPicConnected || isNFConnected || isARCConnected) whatsConnected = "Connected: ";
+		if (isPicConnected) whatsConnected += "Pic ";
+		if (isNFConnected) whatsConnected += "NanoFluor ";
+		if (isARCConnected) whatsConnected += "ARC ";
+
+		statusString = whatsConnected;
 	}
 	
 	if (isNFConnected)
@@ -307,6 +334,19 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 		pPage3->EnableWindow(0);
 	}
 
+	if (isARCConnected)
+	{
+		devARC.b1 = arc_nmperstep1;
+		devARC.b2 = arc_nmperstep2;
+		devARC.a1 = arc_a1;
+		devARC.a2 = arc_a2;
+	}
+	else
+	{
+		m_Mono3Butt.EnableWindow(false);
+		m_Gr300Butt.EnableWindow(false);
+		m_Gr500Butt.EnableWindow(false);
+	}
 
 	if (isPicConnected) 
 	{	
@@ -324,17 +364,20 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 	}
 	else 
 	{
-		m_GoButt.EnableWindow(false);
-		m_SetButt.EnableWindow(false);
-		pPage3->EnableWindow(0);
-		pPage1->EnableWindow(0);
+		if (!isARCConnected)
+		{
+			m_GoButt.EnableWindow(false);
+			m_SetButt.EnableWindow(false);
+			pPage3->EnableWindow(0);
+			pPage1->EnableWindow(0);
+		}
 	}
 
 	m_ContButt.EnableWindow(false);
 
-	if (!isPicConnected && !isNFConnected)
+	if (!isPicConnected && !isNFConnected && !isARCConnected)
 	{
-		statusString = "No device is connected";
+//		statusString = "No device is connected";
 		pPage1->EnableWindow(0);
 		pPage2->EnableWindow(0);
 		pPage3->EnableWindow(0);
@@ -477,6 +520,23 @@ void CLuminescenceComplexDlg::OnClose()
 	WritePrivateProfileString(_T("initial"), _T("LumIntegrTime"), tst, cfg_IniName);
 		
 	WritePrivateProfileString(_T("initial"), _T("FileName"), FileName, cfg_IniName);
+
+
+	
+	WritePrivateProfileString(_T("ARC"), _T("ComportNo"), ARCcomport, cfg_IniName);
+	//tst.Format("%.9f", arc_nmperstep1);
+	//WritePrivateProfileString(_T("lambdas"), _T("ARCnmPerStep1"), tst, cfg_IniName);
+	//tst.Format("%.9f", arc_nmperstep2);
+	//WritePrivateProfileString(_T("lambdas"), _T("ARCnmPerStep2"), tst, cfg_IniName);
+	//tst.Format("%.0f", arc_a1);
+	//WritePrivateProfileString(_T("lambdas"), _T("ARC_a1"), tst, cfg_IniName);
+	//tst.Format("%.0f", arc_a2);
+	//WritePrivateProfileString(_T("lambdas"), _T("ARC_a2"), tst, cfg_IniName);
+
+
+
+
+
 	//TCHAR protocolChar[32] = _T("drivers");
 	//GetPrivateProfileStringW(_T("drivers"), _T("wave"), _T(""), protocolChar, 32, cfg_IniName);
 	//WritePrivateProfileString(_T("drivers1"), _T("wave2"), protocolChar, cfg_IniName);
@@ -659,6 +719,19 @@ void CLuminescenceComplexDlg::OnBnClickedRadioMonochr3()
 
 void CLuminescenceComplexDlg::OnBnClickedButtonSet()
 {
+	
+	if (whichMonoEnabled == 2)
+	{
+		pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
+		if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0"); 
+//		if (true) 	pWnd->SetWindowText("200.0"); 
+		else pWnd->SetWindowText("Error");
+		return;
+	}
+
+	
+	
+	
 	UpdateData(true);
 	double tf = atof(editBoxSetWave);
 
@@ -780,7 +853,7 @@ void CLuminescenceComplexDlg::OnBnClickedButtonGo()
 		devPic.SetDelayForMotor2(delay, delayMks);
 
 	}
-	else return;
+	else if (!isARCConnected) return;
 	
 	float lowLim, upLim;
 	if (whichMonoEnabled == 0) { lowLim = pPage4->t_LLIM1; upLim = pPage4->t_ULIM1; }
@@ -789,13 +862,24 @@ void CLuminescenceComplexDlg::OnBnClickedButtonGo()
 	float tf =(float) atof(editBoxGoWave);
 
 	
-
-	if ((lowLim <= tf) && (tf <= upLim))
+	if ((lowLim <= tf) && (tf <= upLim) && (whichMonoEnabled < 2))
 	{
 		Sleep(700);
 		m_motorMovingThread = AfxBeginThread(MotorMovingThread, this);
 		m_Mono1Butt.EnableWindow(false);
 		m_Mono2Butt.EnableWindow(false);
+		m_Mono3Butt.EnableWindow(false);
+		m_buttonStart.EnableWindow(false);
+		m_StopButt.EnableWindow(false);
+		m_ContButt.EnableWindow(false);
+	}
+	else if (whichMonoEnabled == 2)
+	{
+		Sleep(300);
+		m_motorMovingThread = AfxBeginThread(MotorMovingThread, this);
+		m_Mono1Butt.EnableWindow(false);
+		m_Mono2Butt.EnableWindow(false);
+		m_Mono3Butt.EnableWindow(false);
 		m_buttonStart.EnableWindow(false);
 		m_StopButt.EnableWindow(false);
 		m_ContButt.EnableWindow(false);
@@ -818,7 +902,9 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 	float endPosition;
 	double nmPerStep;
 	double* motdelay;
-	double mot1delay = pThis->pPage4->stepMot1Delay; double mot2delay = pThis->pPage4->stepMot2Delay;
+	double mot1delay = pThis->pPage4->stepMot1Delay; 
+	double mot2delay = pThis->pPage4->stepMot2Delay;
+	double mot3delay = 8.68e-5;
 	float lowLim, upLim;
 	clock_t time = 0;
 	clock_t time1 = 0; 
@@ -833,7 +919,7 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 		motNum = 1;
 		motdelay = &mot1delay;
 	}
-	else
+	else if (pThis->whichMonoEnabled == 1)
 	{
 		nmPerStep = pThis->pPage4->stepMotnmPerStep2;
 		lowLim = pThis->pPage4->t_LLIM2;
@@ -841,6 +927,15 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 		lambda = &pThis->lamb2;
 		motNum = 2;
 		motdelay = &mot1delay;
+	}
+	else // Мотаємо арком
+	{
+		if (pThis->isARCGr300) nmPerStep = pThis->arc_nmperstep1; else nmPerStep = pThis->arc_nmperstep2;
+		lowLim = 0;
+		upLim = 20000;
+		lambda = &pThis->lamb3;
+		motNum = 3;
+		motdelay = &mot3delay;
 	}
 
 	if (*lambda < endPosition) direction = 1; else direction = -1;
@@ -862,14 +957,15 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 		*lambda += (step01nm * nmPerStep) * direction;
 		if ((*lambda < (lowLim - 0.1)) || (*lambda > (upLim +0.1))) { *lambda -= (step01nm * nmPerStep) * direction; break; }
 		
-		if ((pThis->isPicConnected && !pThis->isNFConnected))
-		{
-			pThis->devPic.MotorGo(step01nm, motNum, direction * dirStep, pThis->StopsInt, pThis->StopsCorInt);
-		}
-		else
+		if (pThis->isPicConnected && (motNum < 3))
 		{
 			pThis->devPic.MotorGo(step01nm, motNum, direction * dirStep);
 		}
+		else 
+			if (pThis->isARCConnected && (motNum == 3))
+			{
+				pThis->devARC.MotorGo(step01nm, direction * dirStep);
+			}
 		
 				
 		secToEnd = (UINT) abs(((endPosition - *lambda) / nmPerStep) * (*motdelay)) / 1000;
@@ -880,6 +976,7 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 		{
 			//if (pThis->isPicConnected && !pThis->isNFConnected) pThis->devPic.GetCounts(pThis->StopsInt, pThis->StopsCorInt);
 			if (pThis->isNFConnected) pThis->devNanoFluor.GetIntensities(pThis->StartsInt, pThis->StopsInt, pThis->StartsCorInt, pThis->StopsCorInt);
+			else if (pThis->isPicConnected) pThis->devPic.GetCounts(pThis->StopsInt, pThis->StopsCorInt);
 			time1 = clock();
 		}
 	}
@@ -1485,6 +1582,7 @@ void CLuminescenceComplexDlg::MeasureLuminescence(void)
 
 	double* lambda; double* motdelay; double* nmPerStep;
 	double mot1delay = pPage4->stepMot1Delay; double mot2delay = pPage4->stepMot2Delay;
+	double mot3delay = 8.68e-5;
 	double nmPerStep1 = pPage4->stepMotnmPerStep1; double nmPerStep2 = pPage4->stepMotnmPerStep2;
 	float lowLim, upLim;
 	byte motNum;
@@ -1499,18 +1597,27 @@ void CLuminescenceComplexDlg::MeasureLuminescence(void)
 		nmPerStep = &nmPerStep1;
 		motNum = 1;
 	}
-	else
-	{
-		lambda = &lamb2;
-		lowLim = pPage4->t_LLIM2;
-		upLim = pPage4->t_ULIM2;
-		motdelay = &mot2delay;
-		nmPerStep = &nmPerStep2;		
-		motNum = 2;
-	}
+	else if (whichMonoEnabled == 1)
+		{
+			lambda = &lamb2;
+			lowLim = pPage4->t_LLIM2;
+			upLim = pPage4->t_ULIM2;
+			motdelay = &mot2delay;
+			nmPerStep = &nmPerStep2;		
+			motNum = 2;
+		}
+		else // мотаємо арком
+		{
+			lambda = &lamb3;
+			lowLim = 0;
+			upLim = 20000;
+			motdelay = &mot3delay;
+			if (isARCGr300) nmPerStep = &arc_nmperstep1; else nmPerStep = &arc_nmperstep2;
+			motNum = 3;
+		}
 			
 
-	if (isPicConnected) 
+	if (isPicConnected && (motNum < 3))
 	{ 
 		byte delay, delayMks;
 
@@ -1524,7 +1631,11 @@ void CLuminescenceComplexDlg::MeasureLuminescence(void)
 
 		devPic.SetDelayForMotor2(delay, delayMks);
 	}
-	else return;
+	else if (isARCConnected && (motNum == 3))
+		{
+			// може щось ініціалізувати в арку? хоча навіщо?
+		}
+		else return;
 
 
 	startTime = CTime::GetCurrentTime();
@@ -1569,12 +1680,13 @@ void CLuminescenceComplexDlg::MeasureLuminescence(void)
 
 		if (Steps > step01nm) Steps -= step01nm; else { step01nm = Steps;  Steps = 0; }
 
-		if (isNotFirstMeas | isContinued)
+		if (isNotFirstMeas || isContinued)
 		{
 			*lambda += (step01nm * (*nmPerStep)) * direction;
 			if ((*lambda < (lowLim - 0.1)) || (*lambda > (upLim + 0.1))) { *lambda -= (step01nm * (*nmPerStep)) * direction; break; }
 		//	statusString2 = "Motor Started";
-			motorGoResult = devPic.MotorGo(step01nm, motNum, direction * dirStep);
+			if (motNum < 3) motorGoResult = devPic.MotorGo(step01nm, motNum, direction * dirStep);
+			else devARC.MotorGo(step01nm, direction * dirStep);
 		//	if (motorGoResult) statusString2 = "true"; else statusString2 = "false";
 		}
 		
@@ -2210,4 +2322,28 @@ void CLuminescenceComplexDlg::OnBnClickedDigst2()
 void CLuminescenceComplexDlg::OnBnClickedArcSetup()
 {
 	// TODO: Add your control notification handler code here
+}
+
+
+void CLuminescenceComplexDlg::OnBnClickedRadioGr500()
+{
+	isARCGr300 = false;
+	
+	// Initialization
+	pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
+	if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0"); 
+//	if (true) 	pWnd->SetWindowText("200.0"); 
+	else pWnd->SetWindowText("Error");
+}
+
+
+void CLuminescenceComplexDlg::OnBnClickedRadioGr300()
+{
+	isARCGr300 = true;
+
+	// Initialization
+	pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
+	if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0"); 
+//	if (true) 	pWnd->SetWindowText("200.0"); 
+	else pWnd->SetWindowText("Error");
 }
