@@ -1,3 +1,5 @@
+#include <FlexiTimer2.h>
+
 const int led = 13;
 const int grating_indicator = 4;
 const int motor_indicator = 5;
@@ -20,6 +22,9 @@ byte ind_2_state = 0;
 byte ind_2_prestate = 0;
 char command;
 
+bool initialising = false;
+bool stopRegim = false;
+
 void setup()
 {
   pinMode(stepPin, OUTPUT);
@@ -30,6 +35,7 @@ void setup()
   digitalWrite(dirPin, LOW);
   digitalWrite(led, LOW);
   Serial.begin(115200);
+  FlexiTimer2::set(60000, timerInterupt);
 }
 
 void loop()
@@ -100,8 +106,19 @@ void goto_zero()
   ind_1_state = !digitalRead(grating_indicator);
   ind_1_prestate = ind_1_state;
 
+  initialising = true;
+  FlexiTimer2::start();
+
   while (true)
   {
+    if (stopRegim)
+    {
+      digitalWrite(led, LOW);
+      initialising = false;
+      stopRegim = false;
+      FlexiTimer2::stop();
+      return;
+    }
     makeStep();
 
     ind_1_state = !digitalRead(grating_indicator);
@@ -124,18 +141,49 @@ void goto_zero()
   ind_2_state = digitalRead(motor_indicator);
   ind_2_prestate = ind_1_state;
 
+
+
+
+
   while (true)
   {
+    if (stopRegim)
+    {
+      digitalWrite(led, LOW);
+      initialising = false;
+      stopRegim = false;
+      FlexiTimer2::stop();
+      return;
+    }
     makeStep();
 
     ind_2_state = digitalRead(motor_indicator);
     if ((!ind_2_state) && ind_2_prestate)
     {
+      if (stopRegim)
+      {
+        digitalWrite(led, LOW);
+        initialising = false;
+        stopRegim = false;
+        FlexiTimer2::stop();
+        return;
+      }
       makeStep();
       if (!ind_2_state) break;
       else
       {
-        while (ind_2_state) makeStep();
+        while (ind_2_state)
+        {
+          if (stopRegim)
+          {
+            digitalWrite(led, LOW);
+            initialising = false;
+            stopRegim = false;
+            FlexiTimer2::stop();
+            return;
+          }
+          makeStep();
+        }
         break;
       }
 
@@ -145,6 +193,9 @@ void goto_zero()
 
   sped /= 10; // return high speed
   digitalWrite(led, LOW);
+  initialising = false;
+  stopRegim = false;
+  FlexiTimer2::stop();
 }
 
 inline void makeStep()
@@ -153,4 +204,10 @@ inline void makeStep()
   delayMicroseconds(sped);
   digitalWrite(stepPin, LOW);
   delayMicroseconds(sped);
+}
+
+
+void  timerInterupt()
+{
+  if (initialising) stopRegim = true;
 }
