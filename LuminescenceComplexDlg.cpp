@@ -363,7 +363,9 @@ BOOL CLuminescenceComplexDlg::OnInitDialog()
 		devPic.SetDelayForMotor2(delay, delayMks);
 	}
 	else 
-	{
+	{	
+		m_Mono1Butt.EnableWindow(false);
+		m_Mono2Butt.EnableWindow(false);
 		if (!isARCConnected)
 		{
 			m_GoButt.EnableWindow(false);
@@ -715,6 +717,8 @@ void CLuminescenceComplexDlg::OnBnClickedRadioMonochr3()
 	lambda1ctrl.EnableWindow(false);
 	lambda3ctrl.EnableWindow(true);
 	m_SetButt.SetWindowTextA("Initialize");
+
+	if (!devARC.isInitialized) InitARC();
 }
 
 void CLuminescenceComplexDlg::OnBnClickedButtonSet()
@@ -2344,22 +2348,20 @@ void CLuminescenceComplexDlg::OnBnClickedArcSetup()
 void CLuminescenceComplexDlg::OnBnClickedRadioGr500()
 {
 	isARCGr300 = false;
-	
-	// Initialization
-	pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
-	if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0"); 
-//	if (true) 	pWnd->SetWindowText("200.0"); 
-	else pWnd->SetWindowText("Error");
+	InitARC();
 }
 
 
 void CLuminescenceComplexDlg::OnBnClickedRadioGr300()
 {
 	isARCGr300 = true;
+	InitARC();
+}
 
-	// Initialization
+
+void CLuminescenceComplexDlg::InitARC()
+{
 	pWnd = GetDlgItem(IDC_EDIT_Wavelength3);
-	if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0"); 
-//	if (true) 	pWnd->SetWindowText("200.0"); 
+	if (devARC.InitializeARC(isARCGr300)) 	pWnd->SetWindowText("200.0");
 	else pWnd->SetWindowText("Error");
 }

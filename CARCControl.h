@@ -15,7 +15,7 @@ public:
 	bool GotoStep(long stepnum);
 	bool IsConnected();
 	bool MotorGo(WORD numberOfSteps, short Direction = -1);
-
+	bool isInitialized;
 
 	double b1;
 	double b2;

@@ -3,7 +3,7 @@
 
 CARCControl::CARCControl()
 {
-	
+	isInitialized = false;
 }
 
 void CARCControl::SetComportAndConnect(CString Comport)
@@ -30,7 +30,7 @@ bool CARCControl::InitializeARC(bool isGr300)
    char incomingData[36] = "";
    int dataLength = 36;
 
-   for (int i = 0; i < 100; i++)
+   for (int i = 0; i < 50; i++)
    {
 		readResult = SP->ReadData(incomingData, dataLength);
 		if (readResult == 0) { Sleep(1000); continue; } else break;
@@ -46,6 +46,7 @@ bool CARCControl::InitializeARC(bool isGr300)
 
    GotoStep(stepnum);
    
+   isInitialized = true;
    return true;
 }
 

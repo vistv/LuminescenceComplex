@@ -212,4 +212,5 @@ public:
 	afx_msg void OnBnClickedArcSetup();
 	afx_msg void OnBnClickedRadioGr500();
 	afx_msg void OnBnClickedRadioGr300();
+	void InitARC();
 };
