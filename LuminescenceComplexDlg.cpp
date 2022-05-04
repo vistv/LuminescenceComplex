@@ -1836,6 +1836,7 @@ void CLuminescenceComplexDlg::MeasureCombo(void)
 	double nmPerStep1 = pPage4->stepMotnmPerStep1; double nmPerStep2 = pPage4->stepMotnmPerStep2;
 	float lowLim, upLim;
 	byte motNum;
+	double mot3delay = 8.68e-5;
 
 
 	if (whichMonoEnabled == 0)
@@ -1847,29 +1848,43 @@ void CLuminescenceComplexDlg::MeasureCombo(void)
 		nmPerStep = &nmPerStep1;
 		motNum = 1;
 	}
-	else
+	else if (whichMonoEnabled == 1)
+		{
+			lambda = &lamb2;
+			lowLim = pPage4->t_LLIM2;
+			upLim = pPage4->t_ULIM2;
+			motdelay = &mot2delay;
+			nmPerStep = &nmPerStep2;
+			motNum = 2;
+		}
+	else // мотаємо арком
 	{
-		lambda = &lamb2;
-		lowLim = pPage4->t_LLIM2;
-		upLim = pPage4->t_ULIM2;
-		motdelay = &mot2delay;
-		nmPerStep = &nmPerStep2;
-		motNum = 2;
+		lambda = &lamb3;
+		lowLim = 0;
+		upLim = 20000;
+		motdelay = &mot3delay;
+		if (isARCGr300) nmPerStep = &arc_nmperstep1; else nmPerStep = &arc_nmperstep2;
+		motNum = 3;
 	}
 
-	if (isPicConnected) 
-	{ 
+
+	if (isPicConnected && (motNum < 3))
+	{
 		byte delay, delayMks;
 
 		delay = (BYTE)truncf(pPage4->stepMot1Delay);
-		delayMks = (BYTE)truncf((pPage4->stepMot1Delay - delay)*10);
+		delayMks = (BYTE)truncf((pPage4->stepMot1Delay - delay) * 10);
 
 		devPic.SetDelayForMotor1(delay, delayMks);
 
 		delay = (BYTE)truncf(pPage4->stepMot2Delay);
-		delayMks = (BYTE)truncf((pPage4->stepMot2Delay - delay)*10);
+		delayMks = (BYTE)truncf((pPage4->stepMot2Delay - delay) * 10);
 
 		devPic.SetDelayForMotor2(delay, delayMks);
+	}
+	else if (isARCConnected && (motNum == 3))
+	{
+		// може щось ініціалізувати в арку? хоча навіщо?
 	}
 	else return;
 
@@ -1914,11 +1929,12 @@ void CLuminescenceComplexDlg::MeasureCombo(void)
 
 		if (Steps > step01nm) Steps -= step01nm; else { step01nm = Steps;  Steps = 0; }
 
-		if (isNotFirstMeas | isContinued)
+		if (isNotFirstMeas || isContinued)
 		{
 			*lambda += (step01nm * (*nmPerStep)) * direction;
 			if ((*lambda < (lowLim - 0.1)) || (*lambda > (upLim + 0.1))) { *lambda -= (step01nm * (*nmPerStep)) * direction; break; }
-			devPic.MotorGo(step01nm, motNum, direction * dirStep);
+			if (motNum < 3) devPic.MotorGo(step01nm, motNum, direction * dirStep);
+			else devARC.MotorGo(step01nm, direction * dirStep);
 		}
 
 		isNotFirstMeas = true;
