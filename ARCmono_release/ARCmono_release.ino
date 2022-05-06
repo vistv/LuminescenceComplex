@@ -34,7 +34,7 @@ void setup()
   pinMode(motor_indicator, INPUT);
   digitalWrite(dirPin, LOW);
   digitalWrite(led, LOW);
-  Serial.begin(115200);
+  Serial.begin(2000000);
   FlexiTimer2::set(60000, timerInterupt);
 }
 
@@ -57,7 +57,7 @@ void loop()
     {
 
       steps = Serial.parseInt();
-      motor_run_nsteps();
+   //   motor_run_nsteps();
       Serial.println(current_step_num);
 
     }

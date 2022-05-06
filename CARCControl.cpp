@@ -63,6 +63,7 @@ bool CARCControl::GotoStep(long stepnum)
 	CString st;
 	st.Format("%2d", stepnum);
 	st = "g" + st;
+	st += "e";
 	SP->WriteData(st, st.GetLength());
 
 	int readResult = 0;
@@ -103,21 +104,27 @@ bool CARCControl::IsConnected()
 
 bool CARCControl::MotorGo(WORD numberOfSteps, short Direction)
 {
-	if (!(SP->IsConnected()))
-	{
-		SP->~Serial();
-		SP = new Serial(comport);
-	}
-	if (!(SP->IsConnected())) return false;
+	DWORD time1 = GetTickCount();//@
+	
+	//if (!(SP->IsConnected()))
+	//{
+	//	SP->~Serial();
+	//	SP = new Serial(comport);
+	//}
+	//if (!(SP->IsConnected())) return false;
 	
 	CString data = "d";
 	CString tmp;
 	tmp.Format("%d", numberOfSteps);
 	
 	if (Direction == -1) data += "-";
-	data += tmp;
+	data += tmp + "e";
 	
 	bool res = SP->WriteData(data, data.GetLength());
+
+
+
+
 
 	int readResult = 0;
 	char incomingData[36] = "";
@@ -127,10 +134,16 @@ bool CARCControl::MotorGo(WORD numberOfSteps, short Direction)
 	{
 		readResult = SP->ReadData(incomingData, dataLength);
 		if (readResult == 0) { Sleep(1); continue; }
-		else break;
+		else 
+			break;
 	}
+
+	DWORD time2 = GetTickCount();//@
+	DWORD timeElapsed = time2 - time1; //@
+
 
 	if (readResult == 0) return false;
 	
+
 	return true;
 }

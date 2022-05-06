@@ -965,15 +965,23 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 		*lambda += (step01nm * nmPerStep) * direction;
 		if ((*lambda < (lowLim - 0.1)) || (*lambda > (upLim +0.1))) { *lambda -= (step01nm * nmPerStep) * direction; break; }
 		
-		if (pThis->isPicConnected && (motNum < 3))
+	
+		if (pThis->isARCConnected && (motNum == 3))
 		{
-			pThis->devPic.MotorGo(step01nm, motNum, direction * dirStep);
-		}
-		else 
-			if (pThis->isARCConnected && (motNum == 3))
+			pThis->devARC.MotorGo(step01nm, direction * dirStep);
+		} else if ((pThis->isPicConnected && !pThis->isNFConnected) && motNum < 3)
 			{
-				pThis->devARC.MotorGo(step01nm, direction * dirStep);
+				pThis->devPic.MotorGo(step01nm, motNum, direction * dirStep, pThis->StopsInt, pThis->StopsCorInt);
 			}
+			else if (motNum < 3)
+			{
+				pThis->devPic.MotorGo(step01nm, motNum, direction * dirStep);
+			}
+		
+
+		
+
+
 		
 				
 		secToEnd = (UINT) abs(((endPosition - *lambda) / nmPerStep) * (*motdelay)) / 1000;
@@ -984,7 +992,7 @@ UINT CLuminescenceComplexDlg::MotorMovingThread(LPVOID pParam)
 		{
 			//if (pThis->isPicConnected && !pThis->isNFConnected) pThis->devPic.GetCounts(pThis->StopsInt, pThis->StopsCorInt);
 			if (pThis->isNFConnected) pThis->devNanoFluor.GetIntensities(pThis->StartsInt, pThis->StopsInt, pThis->StartsCorInt, pThis->StopsCorInt);
-			else if (pThis->isPicConnected) pThis->devPic.GetCounts(pThis->StopsInt, pThis->StopsCorInt);
+			//else if (pThis->isPicConnected) pThis->devPic.GetCounts(pThis->StopsInt, pThis->StopsCorInt);
 			time1 = clock();
 		}
 	}
